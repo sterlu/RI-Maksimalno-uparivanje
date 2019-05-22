@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import random
 
 
 def draw_graph(graph):
@@ -10,12 +11,36 @@ def draw_graph(graph):
     plt.show()
 
 
-G = nx.Graph()
+def dumb_search(graph):
+    e_in_matching = []
+    v_in_matching = []
+    for v in list(graph.nodes):
+        if v in v_in_matching:
+            continue
+        for w in graph[v]:
+            if v == w:
+                continue
+            if w in v_in_matching:
+                continue
+            if (v, w) not in e_in_matching and (w, v) not in e_in_matching:
+                e_in_matching.append((v, w))
+                v_in_matching.append(w)
+                v_in_matching.append(v)
+                graph[v][w]['in_matching'] = True
+                print('added ', v, w)
+                break
+    print('cardinality ', len(e_in_matching))
+    return len(e_in_matching)
 
-# G.add_node(1)
-G.add_edge(1, 2)
-G.add_edge(3, 2)
-G[1][2]['in_matching'] = True
-G[2][3]['in_matching'] = False
 
-draw_graph(G)
+def test(search_f, edges=10, nodes=10, draw=True):
+    graph = nx.Graph()
+    for i in range(1, edges):
+        graph.add_edge(random.randint(1, nodes), random.randint(1, nodes))
+    search_f(graph)
+    if draw:
+        draw_graph(graph)
+
+
+while True:
+    test(dumb_search)
