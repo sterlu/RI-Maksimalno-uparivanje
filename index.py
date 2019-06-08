@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import random
 import itertools
 import time
+import math
 
 
 def draw_graph(graph):
@@ -65,9 +66,9 @@ def compare(search_f_1, search_f_2, edges=10, nodes=10, iterations=100):
         res_1 = search_f_1(graph)
         res_2 = search_f_2(graph)
 
-        if res_1 > res_2:
+        if res_1 < res_2:
             results[search_f_1.__name__] += 1
-        elif res_2 > res_1:
+        elif res_2 < res_1:
             results[search_f_2.__name__] += 1
         else:
             results['equal'] += 1
@@ -78,7 +79,7 @@ def brute_force_search(graph):
     edges = list(graph.edges)
     edges.sort()
     permutations = itertools.permutations(edges)
-    best_card = 0
+    best_card = math.inf
     best_solution = []
     for permutation in permutations:
         # print(permutation)
@@ -91,7 +92,7 @@ def brute_force_search(graph):
             v_in_matching.append(w)
             v_in_matching.append(v)
         cardinality = len(e_in_matching)
-        if cardinality > best_card:
+        if cardinality < best_card:
             best_card = cardinality
             best_solution = e_in_matching
             # print('New best', cardinality)
@@ -106,12 +107,11 @@ def node_degree_heuristic_search(graph, iterations=100):
         v_degree[v] = len(graph[v])
     edges_with_weight = []
     for (v, w) in graph.edges:
-        edges_with_weight.append((-v_degree[v] - v_degree[w], v, w))
-    edges_with_weight.reverse()
+        edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
     edges_with_weight.sort(key=lambda x: x[0])
 
     permutations = itertools.permutations(edges_with_weight)
-    best_card = 0
+    best_card = math.inf
     best_solution = []
     for i in range(0, iterations):
         permutation = list(permutations.__next__())
@@ -125,7 +125,7 @@ def node_degree_heuristic_search(graph, iterations=100):
             v_in_matching.append(w)
             v_in_matching.append(v)
         cardinality = len(e_in_matching)
-        if cardinality > best_card:
+        if cardinality < best_card:
             best_card = cardinality
             best_solution = e_in_matching
     for (v, w) in best_solution:
@@ -140,7 +140,7 @@ def node_degree_heuristic_search_noiter(graph):
     edges_with_weight = []
     for (v, w) in graph.edges:
         edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
-    edges_with_weight.sort(key=lambda x: x[0])
+    edges_with_weight.sort(key=lambda x: -x[0])
 
     e_in_matching = []
     v_in_matching = []
@@ -168,10 +168,11 @@ def random_search(graph):
     cardinality = len(e_in_matching)
     return cardinality
 
-# test([brute_force_search], nodes=10, edges=10)
+
+# test([brute_force_search], nodes=15, edges=15)
 # test([node_degree_heuristic_search], nodes=10, edges=10)
-# test([brute_force_search, node_degree_heuristic_search], nodes=10, edges=11, draw=False)
+# test([brute_force_search, node_degree_heuristic_search], nodes=10, edges=10, draw=False)
 # compare(random_search, node_degree_heuristic_search, edges=200, nodes=50, iterations=1000)
 # compare(random_search, node_degree_heuristic_search_noiter, edges=200, nodes=50, iterations=1000)
 # compare(node_degree_heuristic_search, node_degree_heuristic_search_noiter, edges=15, nodes=10, iterations=1000)
-compare(brute_force_search, node_degree_heuristic_search, edges=10, nodes=10, iterations=20)
+# compare(brute_force_search, node_degree_heuristic_search, edges=10, nodes=10, iterations=20)
