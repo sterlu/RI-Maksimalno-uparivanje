@@ -145,6 +145,7 @@ def node_degree_heuristic_search_noiter(graph):
     edges_with_weight = []
     for (v, w) in graph.edges:
         edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
+    edges_with_weight.reverse()
     edges_with_weight.sort(key=lambda x: -x[0])
 
     e_in_matching = []
@@ -161,7 +162,7 @@ def node_degree_heuristic_search_noiter(graph):
 
 
 def random_search(graph):
-    cardinality = test_permutation(list(graph.edges))
+    cardinality, solution = test_permutation(list(graph.edges))
     return cardinality
 
 
@@ -188,6 +189,7 @@ def simulated_annealing_heuristic_search(graph, iterations=1000):
     edges_with_weight = []
     for (v, w) in graph.edges:
         edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
+    edges_with_weight.reverse()
     edges_with_weight.sort(key=lambda x: -x[0])
 
     best_perm = list(map(lambda edge: (edge[1], edge[2]), edges_with_weight))
@@ -212,8 +214,11 @@ def simulated_annealing_heuristic_search(graph, iterations=1000):
 # test([simulated_annealing_heuristic_search], nodes=10, edges=12, draw=False)
 # compare(random_search, node_degree_heuristic_search, edges=200, nodes=50, iterations=1000)
 # compare(random_search, node_degree_heuristic_search_noiter, edges=200, nodes=50, iterations=1000)
-# compare(node_degree_heuristic_search, node_degree_heuristic_search_noiter, edges=15, nodes=10, iterations=1000)
 # compare(brute_force_search, node_degree_heuristic_search, edges=10, nodes=10, iterations=20)
-# compare(node_degree_heuristic_search, simulated_annealing_search, edges=100, nodes=70, iterations=100)
+# compare(node_degree_heuristic_search, node_degree_heuristic_search_noiter, edges=100, nodes=70, iterations=1000)
+# compare(node_degree_heuristic_search, simulated_annealing_search, edges=100, nodes=70, iterations=1000)
+# compare(node_degree_heuristic_search_noiter, simulated_annealing_search, edges=100, nodes=70, iterations=1000)
 # compare(simulated_annealing_heuristic_search, simulated_annealing_search, edges=100, nodes=70, iterations=1000)
-compare(simulated_annealing_heuristic_search, node_degree_heuristic_search, edges=100, nodes=70, iterations=1000)
+# compare(simulated_annealing_heuristic_search, node_degree_heuristic_search_noiter, edges=100, nodes=70, iterations=1000)
+# compare(simulated_annealing_heuristic_search, node_degree_heuristic_search, edges=100, nodes=70, iterations=100)
+compare(simulated_annealing_search, simulated_annealing_heuristic_search, edges=100, nodes=70, iterations=100)
