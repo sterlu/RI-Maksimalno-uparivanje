@@ -75,6 +75,32 @@ def compare(search_f_1, search_f_2, edges=10, nodes=10, iterations=100):
     print(results)
 
 
+def detailed_compare(search_fs, edges=10, nodes=10, iterations=100):
+    results = {}
+    for search_f in search_fs:
+        results[search_f.__name__] = []
+    for i in range(0, iterations):
+        graph = create_graph(edges, nodes)
+        for search_f in search_fs:
+            res = search_f(graph)
+            results[search_f.__name__].append(res)
+        #     print(search_f.__name__, res)
+        # print()
+
+    fig, ax = plt.subplots()
+    for search_f in search_fs:
+        line, = ax.plot(
+            range(1, iterations + 1),
+            results[search_f.__name__]
+        )
+        line.set_label(search_f.__name__)
+    ax.set_ylim(bottom=0)
+    ax.legend()
+    plt.title('{0} nodes/{1} edges'.format(nodes, edges))
+    fig.show()
+
+
+
 def test_permutation(permutation):
     e_in_matching = []
     v_in_matching = []
@@ -221,4 +247,10 @@ def simulated_annealing_heuristic_search(graph, iterations=1000):
 # compare(simulated_annealing_heuristic_search, simulated_annealing_search, edges=100, nodes=70, iterations=1000)
 # compare(simulated_annealing_heuristic_search, node_degree_heuristic_search_noiter, edges=100, nodes=70, iterations=1000)
 # compare(simulated_annealing_heuristic_search, node_degree_heuristic_search, edges=100, nodes=70, iterations=100)
-compare(simulated_annealing_search, simulated_annealing_heuristic_search, edges=100, nodes=70, iterations=100)
+# compare(simulated_annealing_search, simulated_annealing_heuristic_search, edges=100, nodes=70, iterations=100)
+detailed_compare([
+    random_search,
+    simulated_annealing_search,
+    node_degree_heuristic_search,
+    simulated_annealing_heuristic_search,
+], edges=200, nodes=40, iterations=10)
