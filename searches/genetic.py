@@ -22,7 +22,7 @@ class GeneticAlgorithm:
         for chrom in self.initial_population():
             print(chrom)
         print("Best is ", self._best_chromosome)
-        return
+        return self._best_chromosome
 
 
     def initial_population(self):
@@ -72,6 +72,9 @@ class GeneticAlgorithm:
                 if (x == v and y != w) or (x == w and y != v):
                     return False
 
+    def stop_condition(self):
+        return self._current_iteration > self._iterations or self._best_chromosome != None
+
 
 class Chromosome:
     def __init__(self, content, fitness):
@@ -89,8 +92,27 @@ class Chromosome:
         return f"{self.content} fitness = {self.fitness}"
 
 
+def genetic_search(graph):
+    return GeneticAlgorithm(graph).optimize()
+
+
+def create_graph(edges=10, nodes=10):
+    if nodes <= 1:
+        raise Exception('2 or more nodes required')
+
+    graph = nx.Graph()
+    while len(graph.edges) < edges:
+        node_a = random.randint(1, nodes)
+        node_b = random.randint(1, nodes)
+        while node_a == node_b:
+            node_b = random.randint(1, nodes)
+        if node_a > node_b:
+            node_a, node_b = node_b, node_a
+        if (node_a, node_b) in graph.edges:
+            continue
+        graph.add_edge(node_a, node_b)
+    return graph
+
+
 if __name__ == "__main__":
-    graph = create_graph()
-    ga = GeneticAlgorithm(graph)
-    solution = ga.optimize()
-    print(solution)
+    genetic_search(create_graph(30, 40))

@@ -4,6 +4,7 @@ from searches.brute import brute_force_search
 from searches.random import random_search
 from searches.heuristic import node_degree_heuristic_search, node_degree_heuristic_search_noiter
 from searches.annealing import simulated_annealing_search, simulated_annealing_heuristic_search
+from searches.genetic import genetic_search
 
 # test([brute_force_search], nodes=10, edges=10, draw=True)
 # test([node_degree_heuristic_search], nodes=10, edges=10, draw=False)
@@ -22,6 +23,7 @@ from searches.annealing import simulated_annealing_search, simulated_annealing_h
 # compare(simulated_annealing_search, simulated_annealing_heuristic_search, edges=100, nodes=70, iterations=100)
 
 # draw_graph(create_graph(200, 150))
+# genetic_search(create_graph(20,30))
 detailed_compare([
     random_search,
     node_degree_heuristic_search,
