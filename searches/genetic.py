@@ -1,12 +1,14 @@
 from utils import *
 import math
+import networkx as nx
 
 
 class GeneticAlgorithm:
 
     def __init__(self, graph):
+        self._graph = graph
         self._edges = list(graph.edges)
-        self._chromosome_length = len(self._edges)
+        self._chromosome_length = self._num_of_edges = len(self._edges)
 
         self._iterations = 1000                             # Maksimalni dozvoljeni broj iteracija
         self._generation_size = 5000                        # Broj jedinki u jednoj generaciji
@@ -19,10 +21,51 @@ class GeneticAlgorithm:
 
 
     def optimize(self):
-        for chrom in self.initial_population():
-            print(chrom)
+        chromosomes = self.initial_population()
+        while not self.stop_condition():
+            print("Iteration: %d" % self._current_iteration)
+
+            for_reproduction = self.selection(chromosomes)
+
+            i = 0
+            for chromo in for_reproduction:
+                i+=1
+                print(i, " for_repr ", chromo)
+
+            break
+
         print("Best is ", self._best_chromosome)
         return self._best_chromosome
+
+
+    def selection(self, chromosomes):
+        chromosomes_fitness_sum = sum(1/chromosome.fitness for chromosome in chromosomes)
+
+        selected_chromosomes = [
+            self.roulette_selection_pick_one(chromosomes, chromosomes_fitness_sum)
+            for i in range(self._reproduction_size)
+        ]
+
+        return selected_chromosomes
+
+    def roulette_selection_pick_one(self, chromosomes, chromosomes_fitness_sum):
+
+        pick = random.uniform(0, chromosomes_fitness_sum)
+        value = 0
+        for chromosome in chromosomes:
+            value += 1/chromosome.fitness
+            if value > pick:
+                return chromosome
+
+
+
+
+
+    def crossover(self, a, b):
+        cross_point = random.randint(0, self._chromosome_length)
+        ab = a[:cross_point] + b[cross_point:]
+        ba = b[:cross_point] + a[cross_point:]
+        return (ab, ba)
 
 
     def initial_population(self):
@@ -71,9 +114,11 @@ class GeneticAlgorithm:
                     continue
                 if (x == v and y != w) or (x == w and y != v):
                     return False
+        return True
+
 
     def stop_condition(self):
-        return self._current_iteration > self._iterations or self._best_chromosome != None
+        return self._current_iteration > self._iterations
 
 
 class Chromosome:
@@ -116,3 +161,4 @@ def create_graph(edges=10, nodes=10):
 
 if __name__ == "__main__":
     genetic_search(create_graph(30, 40))
+
