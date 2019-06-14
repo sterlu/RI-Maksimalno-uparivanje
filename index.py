@@ -1,282 +1,11 @@
-import networkx as nx
-import matplotlib.pyplot as plt
-import numpy as np
-import random
-import itertools
-import time
-import math
+from testing import test, compare, detailed_compare, compare_iterations
+from utils import create_graph, draw_graph
+from searches.brute import brute_force_search
+from searches.random import random_search
+from searches.heuristic import node_degree_heuristic_search, node_degree_heuristic_search_noiter
+from searches.annealing import simulated_annealing_search, simulated_annealing_heuristic_search
 
-
-def draw_graph(graph):
-    plt.figure(figsize=(8, 8))
-    nx.draw(graph, with_labels=False, node_size=40, edge_color=[
-        ('red' if 'in_matching' in graph.edges[edge] and graph.edges[edge]['in_matching'] else 'black')
-        for edge in graph.edges
-    ])
-
-
-def create_graph(edges=10, nodes=10):
-    if nodes <= 1:
-        raise Exception('2 or more nodes required')
-
-    graph = nx.Graph()
-    while len(graph.edges) < edges:
-        node_a = random.randint(1, nodes)
-        node_b = random.randint(1, nodes)
-        while node_a == node_b:
-            node_b = random.randint(1, nodes)
-        if node_a > node_b:
-            node_a, node_b = node_b, node_a
-        if (node_a, node_b) in graph.edges:
-            continue
-        graph.add_edge(node_a, node_b)
-    return graph
-
-
-def test(search_fs, edges=10, nodes=10, draw=True):
-    print('Creating graph')
-    graph = create_graph(edges, nodes)
-
-    for search_f in search_fs:
-        print()
-        print('Testing', search_f.__name__)
-        start = time.time()
-
-        result = search_f(graph)
-
-        end = time.time()
-        print('{3} with {0} nodes and {1} edges took {2:.3f}s'.format(nodes, edges, end - start, search_f.__name__))
-        print('Final result', result)
-
-        if draw:
-            draw_graph(graph)
-
-        for (v, w) in graph.edges:
-            graph[v][w]['in_matching'] = False
-
-
-def compare(search_f_1, search_f_2, edges=10, nodes=10, iterations=100):
-    print('Comparing {0} and {1}'.format(search_f_1.__name__, search_f_2.__name__))
-    results = {
-        search_f_1.__name__: 0,
-        search_f_2.__name__: 0,
-        'equal': 0
-    }
-    for i in range(0, iterations):
-        graph = create_graph(edges, nodes)
-        res_1 = search_f_1(graph)
-        res_2 = search_f_2(graph)
-
-        if res_1 < res_2:
-            results[search_f_1.__name__] += 1
-        elif res_2 < res_1:
-            results[search_f_2.__name__] += 1
-        else:
-            results['equal'] += 1
-    print(results)
-
-
-def detailed_compare(search_fs, edges=10, nodes=10, iterations=100, plot=False):
-    results = {}
-    sums = {}
-    for search_f in search_fs:
-        results[search_f.__name__] = []
-        sums[search_f.__name__] = 0
-    for i in range(0, iterations):
-        graph = create_graph(edges, nodes)
-        for search_f in search_fs:
-            res = search_f(graph)
-            results[search_f.__name__].append(res)
-            sums[search_f.__name__] += res
-    plt.figure(figsize=(8, 6))
-    ax = plt.subplot(111)
-    if plot:
-        for search_f in search_fs:
-            line, = ax.plot(
-                range(1, iterations + 1),
-                results[search_f.__name__]
-            )
-            line.set_label(search_f.__name__)
-        ax.set_ylim(bottom=0)
-        plt.title('{0} čvorova/{1} ivica'.format(nodes, edges))
-    else:
-        averages = []
-        for search_f in search_fs:
-            name = search_f.__name__
-            averages.append(sums[name] / iterations)
-            print(name, averages[-1])
-            plt.bar([name], averages[-1], zorder=10)
-        plt.grid(True, which='both', axis='y', zorder=0, alpha=1)
-        plt.grid(which='minor', alpha=.3)
-        major_ticks = np.arange(0, max(averages), 5)
-        minor_ticks = np.arange(0, max(averages), 1)
-        ax.set_yticks(major_ticks)
-        ax.set_yticks(minor_ticks, minor=True)
-        plt.legend(list(map(lambda f: f.__name__, search_fs)), loc='upper center', bbox_to_anchor=(0.5, -0.05))
-        plt.tick_params(axis='x', bottom=False, labelbottom=False)
-        plt.title('Prosek za {0} čvorova/{1} ivica u {2} iteracija\n'.format(nodes, edges, iterations))
-        plt.suptitle('\n\n(manje je bolje)', fontsize=8)
-    plt.show()
-
-
-def compare_iterations(search_f, edges=10, nodes=10, iterations=100):
-    results = []
-    graph = create_graph(edges, nodes)
-    for i in range(1, iterations + 1):
-        results.append(search_f(graph, iterations=i))
-    print(results)
-    plt.figure(figsize=(8, 6))
-    ax = plt.subplot(111)
-    ax.plot(results)
-    plt.grid(True, which='both', axis='y', zorder=0, alpha=1)
-    major_ticks = np.arange(min(results)-1, max(results)+1, 1)
-    ax.set_yticks(major_ticks)
-    plt.title('Rezultati po broju iteracija\n\n')
-    plt.suptitle('\n\n{0} čvorova/{1} ivica do {2} iteracija\n(manje je bolje)'.format(nodes, edges, iterations), fontsize=8)
-    plt.show()
-
-
-def test_permutation(permutation):
-    e_in_matching = []
-    v_in_matching = []
-    for (v, w) in permutation:
-        if v in v_in_matching or w in v_in_matching:
-            continue
-        e_in_matching.append((v, w))
-        v_in_matching.append(w)
-        v_in_matching.append(v)
-    cardinality = len(e_in_matching)
-    return cardinality, e_in_matching
-
-
-def test_permutation_with_node_degree_heuristic(graph, permutation):
-    e_in_matching = []
-    v_in_matching = []
-    degree_sum = 0
-    for (v, w) in permutation:
-        if v in v_in_matching or w in v_in_matching:
-            continue
-        e_in_matching.append((v, w))
-        v_in_matching.append(w)
-        v_in_matching.append(v)
-        degree_sum += len(graph[v])
-        degree_sum += len(graph[w])
-    cardinality = len(e_in_matching)
-    heuristic_rating = degree_sum / cardinality
-    return cardinality, e_in_matching, heuristic_rating
-
-
-def brute_force_search(graph):
-    edges = list(graph.edges)
-    edges.sort()
-    permutations = itertools.permutations(edges)
-    best_card = math.inf
-    best_solution = []
-    for permutation in permutations:
-        # print(permutation)
-        curr_card, curr_sol = test_permutation(permutation)
-        if curr_card < best_card:
-            best_card = curr_card
-            best_solution = curr_sol
-            print('New best', curr_card)
-    for (v, w) in best_solution:
-        graph[v][w]['in_matching'] = True
-    return best_card
-
-
-def node_degree_heuristic_search(graph, iterations=10):
-    v_degree = {}
-    for v in graph.nodes:
-        v_degree[v] = len(graph[v])
-    edges_with_weight = []
-    for (v, w) in graph.edges:
-        edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
-    edges_with_weight.sort(key=lambda x: x[0])
-
-    permutations = itertools.permutations(edges_with_weight)
-    best_card = math.inf
-    best_solution = []
-    for i in range(0, iterations):
-        permutation = list(permutations.__next__())
-        permutation.reverse()
-        e_in_matching = []
-        v_in_matching = []
-        for (weight, v, w) in permutation:
-            if v in v_in_matching or w in v_in_matching:
-                continue
-            e_in_matching.append((v, w))
-            v_in_matching.append(w)
-            v_in_matching.append(v)
-        cardinality = len(e_in_matching)
-        if cardinality < best_card:
-            best_card = cardinality
-            best_solution = e_in_matching
-    for (v, w) in best_solution:
-        graph[v][w]['in_matching'] = True
-    return best_card
-
-
-def node_degree_heuristic_search_noiter(graph):
-    v_degree = {}
-    for v in graph.nodes:
-        v_degree[v] = len(graph[v])
-    edges_with_weight = []
-    for (v, w) in graph.edges:
-        edges_with_weight.append((v_degree[v] + v_degree[w], v, w))
-    edges_with_weight.reverse()
-    edges_with_weight.sort(key=lambda x: -x[0])
-
-    e_in_matching = []
-    v_in_matching = []
-    for (weight, v, w) in edges_with_weight:
-        if v in v_in_matching or w in v_in_matching:
-            continue
-        e_in_matching.append((v, w))
-        v_in_matching.append(w)
-        v_in_matching.append(v)
-        graph[v][w]['in_matching'] = True
-    cardinality = len(e_in_matching)
-    return cardinality
-
-
-def random_search(graph):
-    cardinality, solution = test_permutation(list(graph.edges))
-    return cardinality
-
-
-def simulated_annealing_search(graph, iterations=1000):
-    best_perm = list(graph.edges)
-    best_card, best_sol = test_permutation(best_perm)
-    for i in range(1, iterations):
-        curr_perm = best_perm
-        a = random.randint(1, len(best_perm)) - 1
-        b = random.randint(1, len(best_perm)) - 1
-        curr_perm[a], curr_perm[b] = curr_perm[b], curr_perm[a]
-        curr_card, curr_sol = test_permutation(curr_perm)
-        if (curr_card < best_card) or (1 / i > random.random()):
-            best_sol = curr_sol
-            best_card = curr_card
-            best_perm = curr_perm
-    return best_card
-
-
-def simulated_annealing_heuristic_search(graph, iterations=1000):
-    best_perm = list(graph.edges)
-    best_card, best_sol, best_rating = test_permutation_with_node_degree_heuristic(graph, best_perm)
-    for i in range(1, iterations):
-        curr_perm = best_perm
-        a = random.randint(1, len(best_perm)) - 1
-        b = random.randint(1, len(best_perm)) - 1
-        curr_perm[a], curr_perm[b] = curr_perm[b], curr_perm[a]
-        curr_card, curr_sol, curr_rating = test_permutation_with_node_degree_heuristic(graph, curr_perm)
-        if (curr_rating > best_rating) or (1 / i > random.random()):
-            best_sol = curr_sol
-            best_card = curr_card
-            best_perm = curr_perm
-    return best_card
-
-
-# test([brute_force_search], nodes=10, edges=12, draw=False)
+# test([brute_force_search], nodes=10, edges=10, draw=True)
 # test([node_degree_heuristic_search], nodes=10, edges=10, draw=False)
 # test([brute_force_search, node_degree_heuristic_search], nodes=10, edges=10, draw=False)
 # test([simulated_annealing_search], nodes=10, edges=12, draw=False)
@@ -301,8 +30,14 @@ detailed_compare([
     simulated_annealing_heuristic_search,
     # brute_force_search,
 ], edges=200, nodes=150, iterations=200)
-#
-# draw_graph(create_graph(200, 50))
+detailed_compare([
+    random_search,
+    node_degree_heuristic_search,
+    node_degree_heuristic_search_noiter,
+    simulated_annealing_search,
+    simulated_annealing_heuristic_search,
+    # brute_force_search,
+], edges=600, nodes=150, iterations=200)
 detailed_compare([
     random_search,
     node_degree_heuristic_search,
@@ -311,8 +46,6 @@ detailed_compare([
     simulated_annealing_heuristic_search,
     # brute_force_search,
 ], edges=200, nodes=50, iterations=200)
-#
-# draw_graph(create_graph(400, 50))
 detailed_compare([
     random_search,
     node_degree_heuristic_search,
