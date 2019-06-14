@@ -8,11 +8,11 @@ import math
 
 
 def draw_graph(graph):
-    nx.draw(graph, with_labels=True, edge_color=[
+    plt.figure(figsize=(8, 8))
+    nx.draw(graph, with_labels=False, node_size=40, edge_color=[
         ('red' if 'in_matching' in graph.edges[edge] and graph.edges[edge]['in_matching'] else 'black')
         for edge in graph.edges
     ])
-    plt.show()
 
 
 def create_graph(edges=10, nodes=10):
@@ -88,8 +88,8 @@ def detailed_compare(search_fs, edges=10, nodes=10, iterations=100, plot=False):
             res = search_f(graph)
             results[search_f.__name__].append(res)
             sums[search_f.__name__] += res
-
-    fig, ax = plt.subplots()
+    plt.figure(figsize=(8, 6))
+    ax = plt.subplot(111)
     if plot:
         for search_f in search_fs:
             line, = ax.plot(
@@ -104,6 +104,7 @@ def detailed_compare(search_fs, edges=10, nodes=10, iterations=100, plot=False):
         for search_f in search_fs:
             name = search_f.__name__
             averages.append(sums[name] / iterations)
+            print(name, averages[-1])
             plt.bar([name], averages[-1], zorder=10)
         plt.grid(True, which='both', axis='y', zorder=0, alpha=1)
         plt.grid(which='minor', alpha=.3)
@@ -115,6 +116,23 @@ def detailed_compare(search_fs, edges=10, nodes=10, iterations=100, plot=False):
         plt.tick_params(axis='x', bottom=False, labelbottom=False)
         plt.title('Prosek za {0} čvorova/{1} ivica u {2} iteracija\n'.format(nodes, edges, iterations))
         plt.suptitle('\n\n(manje je bolje)', fontsize=8)
+    plt.show()
+
+
+def compare_iterations(search_f, edges=10, nodes=10, iterations=100):
+    results = []
+    graph = create_graph(edges, nodes)
+    for i in range(1, iterations + 1):
+        results.append(search_f(graph, iterations=i))
+    print(results)
+    plt.figure(figsize=(8, 6))
+    ax = plt.subplot(111)
+    ax.plot(results)
+    plt.grid(True, which='both', axis='y', zorder=0, alpha=1)
+    major_ticks = np.arange(min(results)-1, max(results)+1, 1)
+    ax.set_yticks(major_ticks)
+    plt.title('Rezultati po broju iteracija\n\n')
+    plt.suptitle('\n\n{0} čvorova/{1} ivica do {2} iteracija\n(manje je bolje)'.format(nodes, edges, iterations), fontsize=8)
     plt.show()
 
 
@@ -166,7 +184,7 @@ def brute_force_search(graph):
     return best_card
 
 
-def node_degree_heuristic_search(graph, iterations=1000):
+def node_degree_heuristic_search(graph, iterations=10):
     v_degree = {}
     for v in graph.nodes:
         v_degree[v] = len(graph[v])
@@ -273,9 +291,42 @@ def simulated_annealing_heuristic_search(graph, iterations=1000):
 # compare(simulated_annealing_heuristic_search, node_degree_heuristic_search_noiter, edges=100, nodes=70, iterations=1000)
 # compare(simulated_annealing_heuristic_search, node_degree_heuristic_search, edges=100, nodes=70, iterations=100)
 # compare(simulated_annealing_search, simulated_annealing_heuristic_search, edges=100, nodes=70, iterations=100)
+
+# draw_graph(create_graph(200, 150))
 detailed_compare([
     random_search,
     node_degree_heuristic_search,
+    node_degree_heuristic_search_noiter,
     simulated_annealing_search,
     simulated_annealing_heuristic_search,
-], edges=200, nodes=50, iterations=100)
+    # brute_force_search,
+], edges=200, nodes=150, iterations=200)
+#
+# draw_graph(create_graph(200, 50))
+detailed_compare([
+    random_search,
+    node_degree_heuristic_search,
+    node_degree_heuristic_search_noiter,
+    simulated_annealing_search,
+    simulated_annealing_heuristic_search,
+    # brute_force_search,
+], edges=200, nodes=50, iterations=200)
+#
+# draw_graph(create_graph(400, 50))
+detailed_compare([
+    random_search,
+    node_degree_heuristic_search,
+    node_degree_heuristic_search_noiter,
+    simulated_annealing_search,
+    simulated_annealing_heuristic_search,
+    # brute_force_search,
+], edges=400, nodes=50, iterations=200)
+
+# detailed_compare([
+#     node_degree_heuristic_search,
+#     node_degree_heuristic_search_noiter,
+# ], edges=200, nodes=50, iterations=50)
+
+# compare_iterations(simulated_annealing_search, edges=200, nodes=50, iterations=500)
+# compare_iterations(simulated_annealing_heuristic_search, edges=200, nodes=50, iterations=500)
+# compare_iterations(node_degree_heuristic_search, edges=200, nodes=150, iterations=10)
