@@ -1,6 +1,9 @@
+import itertools
+
 from utils import *
 import math
 import networkx as nx
+import numpy as np
 
 
 class GeneticAlgorithm:
@@ -10,14 +13,17 @@ class GeneticAlgorithm:
         self._edges = list(graph.edges)
         self._chromosome_length = self._num_of_edges = len(self._edges)
 
+
+        #TODO eksperimentalno odrediti(u odonosu na E?)
+
         self._iterations = 1000                             # Maksimalni dozvoljeni broj iteracija
-        self._generation_size = 5000                        # Broj jedinki u jednoj generaciji
+        self._generation_size = 500                         # Broj jedinki u jednoj generaciji
         self._mutation_rate = 0.01                          # Verovatnoca da se desi mutacija
-        self._reproduction_size = 1000                      # Broj jedinki koji ucestvuje u reprodukciji
+        self._reproduction_size = 100                       # Broj jedinki koji ucestvuje u reprodukciji
         self._current_iteration = 0                         # Trenutna iteracija
 
         #najbolji hromozom
-        self._best_chromosome = Chromosome([0 for i in range(self._chromosome_length)], math.inf)
+        self._best_chromosome = Chromosome(None, math.inf)
 
 
     def optimize(self):
@@ -27,7 +33,7 @@ class GeneticAlgorithm:
             for_reproduction = self.selection(chromosomes)
             chromosomes = self.create_generation(for_reproduction)
             self._current_iteration += 1
-            if self._current_iteration % 20 == 0:
+            if self._current_iteration % 10 == 0:
                 print("Iteration: %d" % self._current_iteration)
                 print("Best chromosome: ", self._best_chromosome, "\n")
 
@@ -40,16 +46,24 @@ class GeneticAlgorithm:
 
         while len(new_generation) < self._generation_size:
 
-            parents = random.sample(for_reproduction, 2)
-            child1, child2 = self.crossover(parents[0].content, parents[1].content)
+            #TODO prebrzo konvergira?
+            try:
+                parents = random.sample(for_reproduction, 2)
+            except ValueError as e:
+                print("Ostao je samo jedan hromozom!")
+                print("Najbolji: ", self._best_chromosome)
+                exit()
+            #TODO
+            #child1, child2 = self.crossover(parents[0].content, parents[1].content)
+            child1, child2 = parents[0], parents[1]
 
             # Vrsimo mutaciju nakon ukrstanja
             child1 = self.mutation(child1)
             child2 = self.mutation(child2)
 
             # Dodajemo nove hromozome u novu generaciju
-            new_generation.append(Chromosome(child1, self.fitness(child1)))
-            new_generation.append(Chromosome(child2, self.fitness(child2)))
+            new_generation.append(child1)
+            new_generation.append(child2)
 
         return new_generation
 
@@ -74,69 +88,46 @@ class GeneticAlgorithm:
 
 
 
-    def crossover(self, a, b):
+    def crossover(self, a, b): #TODO
         cross_point = random.randint(0, self._chromosome_length)
         ab = a[:cross_point] + b[cross_point:]
         ba = b[:cross_point] + a[cross_point:]
         return (ab, ba)
 
 
-    def mutation(self, chromosome_content):
+    def mutation(self, chromosome):
         """Vrsi mutaciju nad hromozomom sa verovatnocom self._mutation_rate"""
         t = random.random()
         if t < self._mutation_rate:
-            i = random.randint(0, self._chromosome_length-1)
-            chromosome_content[i] = 1 if chromosome_content[i] == 0 else 0
-        return chromosome_content
+            i1 = random.randint(0, self._chromosome_length-1)
+            i2 = random.randint(0, self._chromosome_length-1)
+
+            chromosome_content = chromosome.content
+
+            tmp = chromosome_content[i1]
+            chromosome_content[i1] = chromosome_content[i2]
+            chromosome_content[i2] = tmp
+
+            chromosome.content = chromosome_content
+            chromosome.fitness = self.fitness(chromosome_content)
+
+        return chromosome
 
 
     def initial_population(self):
         init_population = []
         for i in range(self._generation_size):
-            chromosome_content = random.choices([0, 1], k = self._chromosome_length)
-            init_population.append(Chromosome(chromosome_content, self.fitness(chromosome_content)))
+            permutation = np.random.permutation(self._edges).tolist()
+            init_population.append(Chromosome(permutation, self.fitness(permutation)))
         return init_population
 
 
-    def fitness(self, chromosome_content):
-        if self.is_a_maximal_matching(chromosome_content) is False:
-            return math.inf
-        else:
-            this_fitness = sum(chromosome_content)
-            if (this_fitness < self._best_chromosome.fitness):
-                self._best_chromosome.content = chromosome_content
-                self._best_chromosome.fitness = this_fitness
-            return this_fitness
-
-
-    def is_a_maximal_matching(self, chromosome_content):
-        included_edges = []
-        for i in range(self._chromosome_length):
-            if chromosome_content[i] == 1:
-                included_edges.append(self._edges[i])
-
-        # ako hromozom nije uparivanje sledi da nije maksimalno uparivanje
-        if self.is_a_matching(included_edges) is False:
-            return False
-
-        # ako mozemo da dodamo ivicu u uparivanje tako da i dalje bude uparivanje, nije maksimalno uparivanje
-        for (v, w) in self._edges:
-            if not (v, w) in included_edges:
-                included_edges.append((v, w))
-                if self.is_a_matching(included_edges):
-                    return False
-                included_edges.pop()
-        return True
-
-
-    def is_a_matching(self, included_edges):
-        for (v, w) in included_edges:
-            for (x, y) in included_edges:
-                if (x == v and y == w) or (x == w and y == v):
-                    continue
-                if (x == v and y != w) or (x == w and y != v):
-                    return False
-        return True
+    def fitness(self, permutation):
+        cardinality = test_permutation(permutation)[0]
+        if cardinality < self._best_chromosome.fitness:
+            self._best_chromosome.fitness = cardinality
+            self._best_chromosome.content = permutation
+        return cardinality
 
 
     def stop_condition(self):
@@ -149,36 +140,14 @@ class Chromosome:
         self.fitness = fitness
 
     def __str__(self):
-        if self.fitness == math.inf:
-            return f"{self.content} fitness = inf"
-        return f"{self.content} fitness = {self.fitness}"
+        return f"{self.content} \nfitness = {self.fitness}"
 
     def __repr__(self):
-        if self.fitness == math.inf:
-            return f"{self.content} fitness = inf"
-        return f"{self.content} fitness = {self.fitness}"
+        return f"{self.content} \nfitness = {self.fitness}"
 
 
-def genetic_search(graph):
+def genetic_search(graph): #TODO
     return GeneticAlgorithm(graph).optimize()
-
-
-def create_graph(edges=10, nodes=10):
-    if nodes <= 1:
-        raise Exception('2 or more nodes required')
-
-    graph = nx.Graph()
-    while len(graph.edges) < edges:
-        node_a = random.randint(1, nodes)
-        node_b = random.randint(1, nodes)
-        while node_a == node_b:
-            node_b = random.randint(1, nodes)
-        if node_a > node_b:
-            node_a, node_b = node_b, node_a
-        if (node_a, node_b) in graph.edges:
-            continue
-        graph.add_edge(node_a, node_b)
-    return graph
 
 
 if __name__ == "__main__":
