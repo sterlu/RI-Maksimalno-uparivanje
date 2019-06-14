@@ -23,41 +23,54 @@ class GeneticAlgorithm:
     def optimize(self):
         chromosomes = self.initial_population()
         while not self.stop_condition():
-            print("Iteration: %d" % self._current_iteration)
 
             for_reproduction = self.selection(chromosomes)
-
-            i = 0
-            for chromo in for_reproduction:
-                i+=1
-                print(i, " for_repr ", chromo)
-
-            break
+            chromosomes = self.create_generation(for_reproduction)
+            self._current_iteration += 1
+            if self._current_iteration % 20 == 0:
+                print("Iteration: %d" % self._current_iteration)
+                print("Best chromosome: ", self._best_chromosome, "\n")
 
         print("Best is ", self._best_chromosome)
         return self._best_chromosome
 
 
+    def create_generation(self, for_reproduction):
+        new_generation = []
+
+        while len(new_generation) < self._generation_size:
+
+            parents = random.sample(for_reproduction, 2)
+            child1, child2 = self.crossover(parents[0].content, parents[1].content)
+
+            # Vrsimo mutaciju nakon ukrstanja
+            child1 = self.mutation(child1)
+            child2 = self.mutation(child2)
+
+            # Dodajemo nove hromozome u novu generaciju
+            new_generation.append(Chromosome(child1, self.fitness(child1)))
+            new_generation.append(Chromosome(child2, self.fitness(child2)))
+
+        return new_generation
+
+
     def selection(self, chromosomes):
         chromosomes_fitness_sum = sum(1/chromosome.fitness for chromosome in chromosomes)
 
-        selected_chromosomes = [
-            self.roulette_selection_pick_one(chromosomes, chromosomes_fitness_sum)
-            for i in range(self._reproduction_size)
-        ]
-
-        return selected_chromosomes
-
-    def roulette_selection_pick_one(self, chromosomes, chromosomes_fitness_sum):
+        selected_chromosomes = []
 
         pick = random.uniform(0, chromosomes_fitness_sum)
         value = 0
+        i = 0
         for chromosome in chromosomes:
             value += 1/chromosome.fitness
-            if value > pick:
-                return chromosome
+            if i >= self._reproduction_size:
+                break
+            if value >= pick:
+                selected_chromosomes.append(chromosome)
+                i += 1
 
-
+        return selected_chromosomes
 
 
 
@@ -66,6 +79,15 @@ class GeneticAlgorithm:
         ab = a[:cross_point] + b[cross_point:]
         ba = b[:cross_point] + a[cross_point:]
         return (ab, ba)
+
+
+    def mutation(self, chromosome_content):
+        """Vrsi mutaciju nad hromozomom sa verovatnocom self._mutation_rate"""
+        t = random.random()
+        if t < self._mutation_rate:
+            i = random.randint(0, self._chromosome_length-1)
+            chromosome_content[i] = 1 if chromosome_content[i] == 0 else 0
+        return chromosome_content
 
 
     def initial_population(self):
@@ -160,5 +182,5 @@ def create_graph(edges=10, nodes=10):
 
 
 if __name__ == "__main__":
-    genetic_search(create_graph(30, 40))
+    genetic_search(create_graph(200, 300))
 
