@@ -9,8 +9,10 @@ import numpy as np
 class GeneticAlgorithm:
 
     def __init__(self, graph):
+
         self._graph = graph
         self._edges = list(graph.edges)
+        #self._edges = list(dict.fromkeys(list(graph.edges)))  #TODO u grafu se mogu ponavljati ivice. Pogledati utils
         self._chromosome_length = self._num_of_edges = len(self._edges)
 
 
@@ -50,9 +52,10 @@ class GeneticAlgorithm:
             try:
                 parents = random.sample(for_reproduction, 2)
             except ValueError as e:
-                print("Ostao je samo jedan hromozom!")
-                print("Najbolji: ", self._best_chromosome)
-                exit()
+                #print("Ostao je samo jedan hromozom!")
+                #print("Najbolji: ", self._best_chromosome)
+                self._current_iteration = self._iterations + 1
+                parents = tuple(random.sample(for_reproduction, 1))*2
             child1, child2 = self.crossover(parents[0], parents[1])
 
             # Vrsimo mutaciju nakon ukrstanja
@@ -88,46 +91,49 @@ class GeneticAlgorithm:
 
     def crossover(self, parent1, parent2):
         """order 1 crossover"""
+
         parent1_content = parent1.content
         parent2_content = parent2.content
-
-        print("par ", parent1_content, "\n", parent1_content)#TODO
 
         swath_size = random.randint(1, self._chromosome_length)
         swath_pos = random.randint(0, self._chromosome_length - swath_size)
 
-        child1_content = child2_content = list("placeholder" for _ in range(self._chromosome_length))
+        child1_content = parent1_content
+        child2_content = parent2_content
 
-        for i in range(swath_size):
-            child1_content[swath_pos + i] = parent1_content[swath_pos + i]
-        for i in range(swath_size):
-            child2_content[swath_pos + i] = parent2_content[swath_pos + i]
+        selected = [child1_content[i] for i in range(swath_pos, swath_pos + swath_size)]
+        k = 0
+        for i in range(len(child1_content)):
+            if swath_pos <= i < swath_pos + swath_size:
+                continue
+            if parent2_content[k] in selected:
+                selected.remove(parent2_content[k])
+                k += 1
+            else:
+                child1_content[i] = parent2_content[k]
+                k += 1
 
-        for edge in child1_content:
-            if edge != "placeholder":
-                print(child1_content,"\n", parent2_content)
-                parent2_content.remove(edge)
-        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
-        for edge in parent2_content:
-            if len(i) == 0:
-                break
-            child1_content[i.pop(0)] = edge
+        selected = [child2_content[i] for i in range(swath_pos, swath_pos + swath_size)]
+        k = 0
+        for i in range(len(child2_content)):
+            if swath_pos <= i < swath_pos + swath_size:
+                continue
+            if parent1_content[k] in selected:
+                selected.remove(parent1_content[k])
+                k += 1
+            else:
+                child2_content[i] = parent1_content[k]
+                k += 1
 
-        for edge in child2_content:
-            if edge != "placeholder":
-                parent1_content.remove(edge)
-        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
-        for edge in parent1_content:
-            if len(i) == 0:
-                break
-            if not edge in child2_content:
-                child2_content[i.pop(0)] = edge
+
 
 
         child1 = Chromosome(child1_content, self.fitness(child1_content))
         child2 = Chromosome(child2_content, self.fitness(child2_content))
-        print("\n" ,child1, "\n", child2)#TODO
+        print("Rod: \n" ,parent1_content, "\n", parent2_content)#TODO obrisati
+        print("Deca: \n" ,child1_content, "\n", child2_content)#TODO obrisati
         return (child1, child2)
+
 
 
     def mutation(self, chromosome):
