@@ -53,9 +53,7 @@ class GeneticAlgorithm:
                 print("Ostao je samo jedan hromozom!")
                 print("Najbolji: ", self._best_chromosome)
                 exit()
-            #TODO
-            #child1, child2 = self.crossover(parents[0].content, parents[1].content)
-            child1, child2 = parents[0], parents[1]
+            child1, child2 = self.crossover(parents[0], parents[1])
 
             # Vrsimo mutaciju nakon ukrstanja
             child1 = self.mutation(child1)
@@ -93,30 +91,42 @@ class GeneticAlgorithm:
         parent1_content = parent1.content
         parent2_content = parent2.content
 
+        print("par ", parent1_content, "\n", parent1_content)#TODO
+
         swath_size = random.randint(1, self._chromosome_length)
         swath_pos = random.randint(0, self._chromosome_length - swath_size)
 
-        child1_content = child2_content = list(range(self._chromosome_length))
+        child1_content = child2_content = list("placeholder" for _ in range(self._chromosome_length))
 
         for i in range(swath_size):
             child1_content[swath_pos + i] = parent1_content[swath_pos + i]
-        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
-        print(i)
-        for edge in parent2_content:
-            if not edge in child1_content:
-                child1_content[i.pop(0)] = edge
-
         for i in range(swath_size):
             child2_content[swath_pos + i] = parent2_content[swath_pos + i]
+
+        for edge in child1_content:
+            if edge != "placeholder":
+                print(child1_content,"\n", parent2_content)
+                parent2_content.remove(edge)
         i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
-        print(i)
+        for edge in parent2_content:
+            if len(i) == 0:
+                break
+            child1_content[i.pop(0)] = edge
+
+        for edge in child2_content:
+            if edge != "placeholder":
+                parent1_content.remove(edge)
+        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
         for edge in parent1_content:
+            if len(i) == 0:
+                break
             if not edge in child2_content:
-                child1_content[i.pop(0)] = edge
+                child2_content[i.pop(0)] = edge
 
 
         child1 = Chromosome(child1_content, self.fitness(child1_content))
         child2 = Chromosome(child2_content, self.fitness(child2_content))
+        print("\n" ,child1, "\n", child2)#TODO
         return (child1, child2)
 
 
@@ -171,15 +181,8 @@ class Chromosome:
         return f"{self.content} \nfitness = {self.fitness}"
 
 
-def genetic_search(graph): #TODO
-    ga = GeneticAlgorithm(graph)
-    ga._generation_size = 2
-    chrom1, chrom2 = ga.initial_population()
-    print(chrom1, "\n", chrom2)
-    chrom1, chrom2 = ga.crossover(chrom1, chrom2)
-    print()
-    print(chrom1, "\n", chrom2)
-    #return GeneticAlgorithm(graph).optimize()
+def genetic_search(graph):
+    return GeneticAlgorithm(graph).optimize()
 
 
 if __name__ == "__main__":
