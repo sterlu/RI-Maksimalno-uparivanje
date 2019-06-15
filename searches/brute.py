@@ -17,10 +17,8 @@ def brute_force_search(graph):
             best_solution = curr_sol
             for (v, w) in best_solution:
                 graph[v][w]['in_matching'] = True
-            draw_graph(graph)
             for (v, w) in best_solution:
                 graph[v][w]['in_matching'] = False
-            print('New best', curr_card)
     for (v, w) in best_solution:
         graph[v][w]['in_matching'] = True
     return best_card

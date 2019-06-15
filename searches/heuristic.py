@@ -2,7 +2,7 @@ import itertools
 import math
 
 
-def node_degree_heuristic_search(graph, iterations=10):
+def node_degree_heuristic_search(graph, iterations=100):
     v_degree = {}
     for v in graph.nodes:
         v_degree[v] = len(graph[v])
