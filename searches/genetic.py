@@ -54,6 +54,7 @@ class GeneticAlgorithm:
             except ValueError as e:
                 #print("Ostao je samo jedan hromozom!")
                 #print("Najbolji: ", self._best_chromosome)
+                print("Doslo je do konvergencije resenja")
                 self._current_iteration = self._iterations + 1
                 parents = tuple(random.sample(for_reproduction, 1))*2
             child1, child2 = self.crossover(parents[0], parents[1])
@@ -102,36 +103,36 @@ class GeneticAlgorithm:
         child2_content = parent2_content
 
         selected = [child1_content[i] for i in range(swath_pos, swath_pos + swath_size)]
-        k = 0
-        for i in range(len(child1_content)):
-            if swath_pos <= i < swath_pos + swath_size:
-                continue
+        order = []
+        for k in range(0, self._chromosome_length):
             if parent2_content[k] in selected:
                 selected.remove(parent2_content[k])
-                k += 1
             else:
-                child1_content[i] = parent2_content[k]
-                k += 1
-
-        selected = [child2_content[i] for i in range(swath_pos, swath_pos + swath_size)]
-        k = 0
-        for i in range(len(child2_content)):
+                order.append(parent2_content[k])
+        for i in range(self._chromosome_length):
             if swath_pos <= i < swath_pos + swath_size:
                 continue
+            next = order.pop(0)
+            child1_content[i] = next
+
+
+
+        selected = [child2_content[i] for i in range(swath_pos, swath_pos + swath_size)]
+        order = []
+        for k in range(0, self._chromosome_length):
             if parent1_content[k] in selected:
                 selected.remove(parent1_content[k])
-                k += 1
             else:
-                child2_content[i] = parent1_content[k]
-                k += 1
-
-
+                order.append(parent1_content[k])
+        for i in range(self._chromosome_length):
+            if swath_pos <= i < swath_pos + swath_size:
+                continue
+            next = order.pop(0)
+            child2_content[i] = next
 
 
         child1 = Chromosome(child1_content, self.fitness(child1_content))
         child2 = Chromosome(child2_content, self.fitness(child2_content))
-        print("Rod: \n" ,parent1_content, "\n", parent2_content)#TODO obrisati
-        print("Deca: \n" ,child1_content, "\n", child2_content)#TODO obrisati
         return (child1, child2)
 
 
