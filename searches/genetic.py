@@ -88,11 +88,36 @@ class GeneticAlgorithm:
 
 
 
-    def crossover(self, a, b): #TODO
-        cross_point = random.randint(0, self._chromosome_length)
-        ab = a[:cross_point] + b[cross_point:]
-        ba = b[:cross_point] + a[cross_point:]
-        return (ab, ba)
+    def crossover(self, parent1, parent2):
+        """order 1 crossover"""
+        parent1_content = parent1.content
+        parent2_content = parent2.content
+
+        swath_size = random.randint(1, self._chromosome_length)
+        swath_pos = random.randint(0, self._chromosome_length - swath_size)
+
+        child1_content = child2_content = list(range(self._chromosome_length))
+
+        for i in range(swath_size):
+            child1_content[swath_pos + i] = parent1_content[swath_pos + i]
+        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
+        print(i)
+        for edge in parent2_content:
+            if not edge in child1_content:
+                child1_content[i.pop(0)] = edge
+
+        for i in range(swath_size):
+            child2_content[swath_pos + i] = parent2_content[swath_pos + i]
+        i = list(range(swath_pos)) + list(range(swath_pos + swath_size, self._chromosome_length))
+        print(i)
+        for edge in parent1_content:
+            if not edge in child2_content:
+                child1_content[i.pop(0)] = edge
+
+
+        child1 = Chromosome(child1_content, self.fitness(child1_content))
+        child2 = Chromosome(child2_content, self.fitness(child2_content))
+        return (child1, child2)
 
 
     def mutation(self, chromosome):
@@ -147,7 +172,14 @@ class Chromosome:
 
 
 def genetic_search(graph): #TODO
-    return GeneticAlgorithm(graph).optimize()
+    ga = GeneticAlgorithm(graph)
+    ga._generation_size = 2
+    chrom1, chrom2 = ga.initial_population()
+    print(chrom1, "\n", chrom2)
+    chrom1, chrom2 = ga.crossover(chrom1, chrom2)
+    print()
+    print(chrom1, "\n", chrom2)
+    #return GeneticAlgorithm(graph).optimize()
 
 
 if __name__ == "__main__":
